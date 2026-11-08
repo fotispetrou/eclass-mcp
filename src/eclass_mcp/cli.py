@@ -37,11 +37,8 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def store_credentials() -> int:
-    try:
-        import keyring
-    except ImportError:
-        print("keyring is not installed; install with: pip install 'eclass-mcp[keyring]'", file=sys.stderr)
-        return 1
+    import keyring
+
     username = input("eClass username: ").strip()
     password = getpass.getpass("eClass password: ")
     if not username or not password:

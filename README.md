@@ -1,26 +1,25 @@
 # eclass-mcp
 
-An [MCP](https://modelcontextprotocol.io) server for the [Open eClass](https://www.openeclass.org/)
-platform used by Greek universities. It logs in with your student account and
-gives an MCP client (Claude Desktop, Claude Code, Cursor, ...) read access to:
+MCP server για το Open eClass των ελληνικών πανεπιστημίων. Συνδέεται με τον
+λογαριασμό σου στο eClass και δίνει σε ένα πρόγραμμα AI (Claude Desktop, Claude
+Code, Cursor κ.ά.) πρόσβαση στα:
 
-- your courses and which tools each one has enabled
-- announcements, across all courses or per course
-- deadlines: assignments, exercises, agenda entries and personal calendar events
-- assignments, with submission status, grade and the details page
-- exercises (quizzes) and their availability window
-- documents, including downloading files or whole folders
-- personal and course messages
+- μαθήματά σου
+- ανακοινώσεις, από όλα τα μαθήματα ή από ένα
+- προθεσμίες εργασιών και ασκήσεων, ημερολόγιο
+- εργασίες, με κατάσταση υποβολής και βαθμό
+- ασκήσεις (quiz)
+- έγγραφα και υλικό, με κατέβασμα αρχείων
+- μηνύματα
 
-It is read-only: nothing is submitted, sent or changed on eClass.
+Μόνο διαβάζει. Δεν υποβάλλει, δεν στέλνει και δεν αλλάζει τίποτα στο eClass.
 
-Written against the University of Thessaly instance (`eclass.uth.gr`, Open eClass
-3.16). Other 3.x instances should work by setting `ECLASS_URL`; see
-[other universities](#other-universities).
+Φτιάχτηκε για το eClass του Πανεπιστημίου Θεσσαλίας (eclass.uth.gr). Για άλλο
+πανεπιστήμιο δες στο τέλος.
 
-## Install
+## Εγκατάσταση
 
-You need Python 3.10 or newer. With [uv](https://docs.astral.sh/uv/):
+Χρειάζεται Python 3.10 ή νεότερο και το [uv](https://docs.astral.sh/uv/).
 
 ```
 git clone https://github.com/fotispetrou/eclass-mcp
@@ -28,117 +27,77 @@ cd eclass-mcp
 uv sync
 ```
 
-or with pip, into a virtualenv:
+## Στοιχεία σύνδεσης
+
+Αποθήκευσε μία φορά το όνομα χρήστη και τον κωδικό σου του eClass στον
+κωδικοφύλακα του συστήματος (στα Windows είναι το Credential Manager):
 
 ```
-pip install git+https://github.com/fotispetrou/eclass-mcp
+uv run eclass-mcp login
 ```
 
-## Credentials
+Εναλλακτικά βάλε τα στις μεταβλητές περιβάλλοντος `ECLASS_USERNAME` και
+`ECLASS_PASSWORD`. Ο κωδικός δεν φεύγει από τον υπολογιστή σου, πηγαίνει μόνο
+στο eClass.
 
-The server needs your eClass username and password. Either put them in the
-environment (`ECLASS_USERNAME`, `ECLASS_PASSWORD`), or store them once in the
-system keyring (Windows Credential Manager, macOS Keychain, GNOME Keyring):
-
-```
-uv run --extra keyring eclass-mcp login
-```
-
-Variables:
-
-| variable             | default                  |                                        |
-| -------------------- | ------------------------ | -------------------------------------- |
-| `ECLASS_URL`         | `https://eclass.uth.gr`  | your university's eClass               |
-| `ECLASS_USERNAME`    |                          |                                        |
-| `ECLASS_PASSWORD`    |                          | falls back to the keyring              |
-| `ECLASS_DOWNLOAD_DIR`| `~/Downloads/eclass`     | where `download_document` saves files  |
-
-Check that everything works before wiring it into a client:
+Δοκίμασε ότι όλα δουλεύουν:
 
 ```
 uv run eclass-mcp check
 ```
 
-This logs in and calls every endpoint once, printing a line per step.
+## Σύνδεση με Claude Desktop ή Cursor
 
-## Client configuration
-
-Claude Desktop (`claude_desktop_config.json`) and Cursor (`mcp.json`) take the
-same shape:
+Στο αρχείο ρυθμίσεων (`claude_desktop_config.json` ή `mcp.json`) πρόσθεσε:
 
 ```json
 {
   "mcpServers": {
     "eclass": {
       "command": "uv",
-      "args": ["--directory", "C:/path/to/eclass-mcp", "run", "eclass-mcp"],
-      "env": {
-        "ECLASS_URL": "https://eclass.uth.gr",
-        "ECLASS_USERNAME": "your_username",
-        "ECLASS_PASSWORD": "your_password"
-      }
+      "args": ["--directory", "C:/path/to/eclass-mcp", "run", "eclass-mcp"]
     }
   }
 }
 ```
 
-Leave `ECLASS_PASSWORD` out if you stored it in the keyring. Claude Code:
+Βάλε τη διαδρομή όπου έκανες το clone. Αν δεν χρησιμοποίησες τον κωδικοφύλακα,
+πρόσθεσε και `"env": {"ECLASS_USERNAME": "...", "ECLASS_PASSWORD": "..."}`.
+
+Για Claude Code:
 
 ```
-claude mcp add eclass -e ECLASS_USERNAME=your_username -- uv --directory C:/path/to/eclass-mcp run eclass-mcp
+claude mcp add eclass -- uv --directory C:/path/to/eclass-mcp run eclass-mcp
 ```
 
-If you installed with pip, use `eclass-mcp` as the command and drop the `uv` arguments.
+Μετά ρωτάς απλά: «τι προθεσμίες έχω τον επόμενο μήνα;», «ποιες είναι οι
+τελευταίες ανακοινώσεις στα Δίκτυα;», «κατέβασε τις διαφάνειες του μαθήματος».
 
-## Tools
+## Εργαλεία
 
-| tool                | arguments                                 |
-| ------------------- | ----------------------------------------- |
-| `whoami`            |                                           |
-| `list_courses`      |                                           |
-| `get_course_tools`  | `course`                                  |
-| `get_announcements` | `course?`, `limit=30`, `search=""`        |
-| `get_announcement`  | `course`, `announcement_id`               |
-| `get_deadlines`     | `days=30`, `past_days=0`, `course?`       |
-| `get_assignments`   | `course`                                  |
-| `get_assignment`    | `course`, `assignment_id`                 |
-| `get_exercises`     | `course`                                  |
-| `list_documents`    | `course`, `path="/"`                      |
-| `download_document` | `course`, `path`, `destination?`          |
-| `get_messages`      | `mailbox="inbox"`, `limit=30`, `search=""`|
-| `get_message`       | `message_id`, `mailbox="inbox"`           |
+| εργαλείο | τι κάνει |
+| --- | --- |
+| `list_courses` | τα μαθήματά σου |
+| `get_announcements` | ανακοινώσεις, όλες ή ενός μαθήματος |
+| `get_announcement` | το πλήρες κείμενο μιας ανακοίνωσης |
+| `get_deadlines` | προθεσμίες και γεγονότα ημερολογίου για τις επόμενες μέρες |
+| `get_assignments`, `get_assignment` | εργασίες ενός μαθήματος και λεπτομέρειες μιας εργασίας |
+| `get_exercises` | ασκήσεις ενός μαθήματος |
+| `list_documents`, `download_document` | έγγραφα μαθήματος και κατέβασμα αρχείου ή φακέλου |
+| `get_messages`, `get_message` | μηνύματα και πλήρες κείμενο ενός μηνύματος |
+| `get_course_tools` | ποια εργαλεία έχει ενεργά ένα μάθημα |
+| `whoami` | έλεγχος ότι η σύνδεση δουλεύει |
 
-`course` is the code in the course URL (`.../courses/DS101/` -> `DS101`).
+Ο κωδικός μαθήματος είναι αυτός στη διεύθυνση του μαθήματος, π.χ. για
+`.../courses/DS101/` είναι `DS101`.
 
-## How it works
+## Άλλο πανεπιστήμιο
 
-Open eClass has no public REST API for students, so the server uses the same
-HTTP endpoints the web interface does: a form login, the DataTables JSON
-endpoints behind "my announcements" and the message inbox, the calendar feed
-that drives the personal calendar page, the mobile-app XML endpoints for course
-tools, and plain HTML parsing for assignments, exercises and documents.
+Βάλε τη διεύθυνση του eClass σου στη μεταβλητή `ECLASS_URL` (π.χ.
+`https://eclass.upatras.gr`) και τρέξε `uv run eclass-mcp check`. Δουλεύει με
+Open eClass 3.x που έχει απλή φόρμα σύνδεσης. Πανεπιστήμια με κεντρικό login
+(SSO, π.χ. ΕΚΠΑ) δεν υποστηρίζονται ακόμα.
 
-The session cookie is kept in memory; if eClass expires it, the server logs in
-again once. A rejected password is reported and not retried for five minutes,
-since eClass temporarily blocks an IP after a few failed logins.
-
-## Other universities
-
-Set `ECLASS_URL` to your institution's eClass and run `eclass-mcp check`. The
-parsing targets the 3.x template markup; sites behind a CAS/SSO login page
-(for example eclass.uoa.gr) are not supported by the form login used here. If
-`check` reports failures on your instance, open an issue with its output.
-
-## Development
-
-```
-uv sync
-uv run pytest
-```
-
-Tests run against HTML fixtures copied from the Open eClass templates, so they
-do not need an account. `eclass-mcp check -v` is the live test.
-
-## License
+## Άδεια
 
 MIT
