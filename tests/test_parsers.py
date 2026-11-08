@@ -151,6 +151,7 @@ def test_parse_assignments():
     a2, a1, a3 = items
     assert a2["title"] == "Εργασία 2"
     assert a2["type"] == "Ατομική εργασία"
+    assert a2["deadline"] == "Τρίτη 15 Δεκεμβρίου 2026 - 11:59 μ.μ."
     assert a2["deadline_iso"] == "2026-12-15 23:59"
     assert a2["status"] == "Απομένουν 5 ημέρες 3 ώρες"
     assert a2["submitted"] is False and a2["expired"] is False

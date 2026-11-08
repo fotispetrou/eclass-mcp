@@ -56,8 +56,11 @@ def to_int(value) -> int | None:
 
 
 def first_text(node: Tag) -> str:
-    """Text of the node's own text children, ignoring nested tags."""
-    return text(" ".join(c for c in node.children if isinstance(c, NavigableString)))
+    """Text of the node's own text children, ignoring nested tags. Brackets
+    left empty by a skipped child, like the '(<small>3 days left</small>)'
+    next to a deadline, are dropped."""
+    own = " ".join(c for c in node.children if isinstance(c, NavigableString))
+    return text(re.sub(r"\(\s*\)", "", own))
 
 
 def cells(row) -> list[str]:
@@ -161,9 +164,12 @@ def login_error(page: str) -> str | None:
 
 
 def parse_profile(page: str) -> dict:
+    """portfolio.php: the profile box has the full name; the same link also
+    exists in the menu as 'My profile', so look inside the box first."""
     s = soup(page)
-    name = s.select_one("a[href*='display_profile.php']")
-    uname = s.select_one(".not_visible.text-center")
+    box = s.select_one("#profile_box") or s
+    name = box.select_one("a[href*='display_profile.php']")
+    uname = box.select_one(".not_visible.text-center")
     return {"name": text(name), "username": text(uname)}
 
 
@@ -393,7 +399,11 @@ def parse_assignment(page: str, page_url: str) -> dict:
     if info_panel is None:
         raise ValueError("no assignment on this page")
 
-    result = {"title": text(title_el), "fields": {}, "files": [], "submission": None, "notes": []}
+    result = {
+        "title": text(title_el), "description": None, "start": None, "start_iso": None,
+        "deadline": None, "deadline_iso": None, "expired": False, "status": None,
+        "fields": {}, "files": [], "submission": None, "notes": [],
+    }
     for label, value in labeled_rows(info_panel):
         result["fields"][label] = html_to_text(value)
         key = classify(label, ASSIGNMENT_FIELDS)
